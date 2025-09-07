@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace App.Repositories
 {
@@ -7,11 +10,18 @@ namespace App.Repositories
     {
         public AppDbContext CreateDbContext(string[] args)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+            // 1️⃣ appsettings.json'u yükle
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory()) // Çalışma dizini
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
 
-            // Buraya migration çalıştırırken kullanılacak connection string'i yaz.
-            // (Güvenlik için production'ta burada şifre saklama. Sadece migration için uygun.)
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=NetCoreWebAPI_DB;Username=guest;Password=guest");
+            // 2️⃣ Connection string'i al
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            // 3️⃣ DbContextOptions oluştur
+            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+            optionsBuilder.UseNpgsql(connectionString);
 
             return new AppDbContext(optionsBuilder.Options);
         }
