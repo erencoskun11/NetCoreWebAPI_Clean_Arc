@@ -1,19 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using App.Repositories; // AppDbContext'in olduðu namespace - gerekirse deðiþtir
+using App.Repositories;
 using System;
-
+using App.Repositories.Extensions;
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 builder.Services.AddControllers();
 
-// PostgreSQL / EF Core setup
-// appsettings.json içinde "DefaultConnection" tanýmlý olmalý.
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+var connectionStrings = builder.Configuration.GetSection("ConnectionStrings")
+                                             .Get<ConnectionStringOptions>();
 
-// Swagger
+builder.Services.AddRepositories(builder.Configuration);
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -22,9 +19,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Apply EF Core migrations at startup (automatically)
-// Bu kýsým, uygulama baþlarken migration'larý veritabanýna uygular.
-// Hata durumunda log'layýp uygulamayý devam ettirir.
 using (var scope = app.Services.CreateScope())
 {
     try
@@ -36,11 +30,9 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine("Error while applying migrations: " + ex);
-        // production ortamýnda burayý daha sofistike logging ile deðiþtir
     }
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
