@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
+using App.Repositories.Products;
 
 namespace App.Repositories
 {
