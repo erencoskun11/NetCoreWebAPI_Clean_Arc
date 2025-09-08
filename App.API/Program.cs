@@ -1,16 +1,26 @@
+using App.Repositories;
+using App.Repositories.Extensions;
+using App.Services.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using App.Repositories;
-using System;
-using App.Repositories.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// PostgreSQL connection string
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// DbContext kaydý
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Repository & Service kayýtlarý
+builder.Services.AddRepositories(builder.Configuration)
+                .AddServices(builder.Configuration);
+// DbContext zaten AddDbContext ile eklenmiþ olmalý (scoped)
+//builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Controllers & Swagger
 builder.Services.AddControllers();
-
-var connectionStrings = builder.Configuration.GetSection("ConnectionStrings")
-                                             .Get<ConnectionStringOptions>();
-
-builder.Services.AddRepositories(builder.Configuration);
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -19,20 +29,14 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Migration ve DB init
 using (var scope = app.Services.CreateScope())
 {
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.Database.Migrate();
-        Console.WriteLine("Database migrated successfully.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Error while applying migrations: " + ex);
-    }
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
 }
 
+// Swagger & HTTP pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -40,9 +44,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
