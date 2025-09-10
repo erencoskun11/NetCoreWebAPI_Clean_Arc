@@ -1,6 +1,11 @@
 using App.Repositories;
 using App.Repositories.Extensions;
+using App.Services;
 using App.Services.Extensions;
+using App.Services.Products;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -16,11 +21,28 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Repository & Service kayýtlarý
 builder.Services.AddRepositories(builder.Configuration)
                 .AddServices(builder.Configuration);
-// DbContext zaten AddDbContext ile eklenmiþ olmalý (scoped)
-//builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Controllers & Swagger
-builder.Services.AddControllers();
+// Register validators from Services assembly
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
+
+// Enable FluentValidation automatic validation (adds errors to ModelState)
+builder.Services.AddFluentValidationAutoValidation();
+
+// Controllers & add custom FluentValidationFilter to format errors as ServiceResult
+builder.Services.AddControllers(options =>
+{
+    // Eðer FluentValidationFilter sýnýfýn ServiceResult.Fail(errors) döndürüyorsa
+    options.Filters.Add<FluentValidationFilter>();
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+});
+
+// Keep default ModelState automatic 400 disabled because we use custom filter
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -36,7 +58,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-// Swagger & HTTP pipeline
+// Swagger UI
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
