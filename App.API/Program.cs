@@ -4,7 +4,6 @@ using App.Services;
 using App.Services.Extensions;
 using App.Services.Products;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -22,21 +21,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddRepositories(builder.Configuration)
                 .AddServices(builder.Configuration);
 
-// Register validators from Services assembly
+// Validator'larý register et (CreateProductRequestValidator'ýn bulunduðu assembly)
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
-// Enable FluentValidation automatic validation (adds errors to ModelState)
-builder.Services.AddFluentValidationAutoValidation();
+// NOT: Otomatik FluentValidation entegrasyonunu KAPATýyoruz (çünkü validator içinde async kurallar olacak)
+// builder.Services.AddFluentValidationAutoValidation(); // <-- DÝKKAT: Bu satýrý kesinlikle yorum satýrý yap
 
-// Controllers & add custom FluentValidationFilter to format errors as ServiceResult
-builder.Services.AddControllers(options =>
-{
-    // Eðer FluentValidationFilter sýnýfýn ServiceResult.Fail(errors) döndürüyorsa
-    options.Filters.Add<FluentValidationFilter>();
-    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
-});
+// Controllers (manuel validasyon yapacaðýmýz için özel filter eklemiyoruz)
+builder.Services.AddControllers();
 
-// Keep default ModelState automatic 400 disabled because we use custom filter
+// Biz manuel Response formatý kullanacaðýmýz için ASP.NET'in otomatik ModelState 400'ünü kapatýyoruz
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
