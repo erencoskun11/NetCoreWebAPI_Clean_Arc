@@ -19,17 +19,12 @@ namespace App.API.Controllers
             return CreateActionResult<List<ProductDto>>(await _productService.GetAllListAsync());
         }
 
-        [HttpGet("{pageNumber}/{pageSize}")]
+        [HttpGet("{pageNumber:int}/{pageSize:int}")]
         public async Task<IActionResult> GetPagedAll(int pageNumber,int pageSize)
         {
             return CreateActionResult<List<ProductDto>>(await _productService.GetPagedAllListAsync(pageNumber,pageSize));
         }
-
-
-
-
-
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             return CreateActionResult<ProductDto?>(await _productService.GetByIdAsync(id));
@@ -41,13 +36,19 @@ namespace App.API.Controllers
             return CreateActionResult<CreateProductResponse>(await _productService.CreateProductAsync(request));
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateProductRequest request)
         {
             return CreateActionResult<object>(await _productService.UpdateProductAsync(id, request));
         }
 
-        [HttpDelete("{id}")]
+        [HttpPatch("stock")]
+        public async Task<IActionResult> UpdateStock(UpdateProductStockRequest request)
+        {
+            return CreateActionResult<object>(await _productService.UpdateStockAsync(request));
+        }
+        
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             return CreateActionResult<object>(await _productService.DeleteProductAsync(id));
@@ -58,6 +59,7 @@ namespace App.API.Controllers
         {
             return CreateActionResult<List<ProductDto>>(await _productService.GetTopPriceAsync(count));
         }
-    }
+
+       }
 }
 
