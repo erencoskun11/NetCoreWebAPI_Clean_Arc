@@ -90,10 +90,10 @@ namespace App.Services.Products
             await _productRepository.AddAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            return ServiceResult<CreateProductResponse>.Success(new CreateProductResponse(product.Id), HttpStatusCode.Created);
+            return ServiceResult<CreateProductResponse>.SuccessAsCreated(new CreateProductResponse(product.Id),$"api/product/{product.Id}");
         }
 
-        public async Task<ServiceResult> UpdateProductAsync(int id, UpdateProductRequest request)
+        public async Task<ServiceResult> UpdateProductAsync(int id ,UpdateProductRequest request)
         {
             var product = await _productRepository.GetByIdAsync(id);
             if (product is null)
@@ -107,6 +107,23 @@ namespace App.Services.Products
             await _unitOfWork.SaveChangesAsync();
 
             return ServiceResult.Success(HttpStatusCode.NoContent);
+        }
+
+        public async Task<ServiceResult> UpdateStockAsync(UpdateProductStockRequest request)
+        {
+            var product = await _productRepository.GetByIdAsync(request.ProductId);
+
+            if(product is null)
+            {
+                return ServiceResult.Fail("Produc not found", HttpStatusCode.NotFound);
+            }
+            product.Stock = request.Quantity;
+
+            _productRepository.Update(product);
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult.Success(HttpStatusCode.NoContent);
+
         }
 
         public async Task<ServiceResult> DeleteProductAsync(int id)
@@ -137,5 +154,6 @@ namespace App.Services.Products
 
             return ServiceResult<List<ProductDto>>.Success(dto, HttpStatusCode.OK);
         }
+
     }
 }
