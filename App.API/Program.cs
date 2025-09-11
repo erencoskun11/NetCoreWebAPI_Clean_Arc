@@ -2,7 +2,7 @@ using App.Repositories;
 using App.Repositories.Extensions;
 using App.Services;
 using App.Services.Extensions;
-using App.Services.Products;
+using App.Services.Products.Create;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
