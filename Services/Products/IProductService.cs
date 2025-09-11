@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using App.Services.Products.Create;
+using App.Services.Products.Update;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace App.Services.Products
 {
