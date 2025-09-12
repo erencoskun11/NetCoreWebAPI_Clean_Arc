@@ -15,7 +15,7 @@ namespace App.Repositories
             _context = context;
             _dbSet = context.Set<T>();
         }
-
+        //IQueryable veriyi hemen cekmiyor 
         public IQueryable<T> GetAll() => _dbSet.AsNoTracking();
 
         public IQueryable<T> Where(Expression<Func<T, bool>> predicate) => _dbSet.Where(predicate).AsNoTracking();
