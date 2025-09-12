@@ -24,10 +24,6 @@ builder.Services.AddRepositories(builder.Configuration)
 // Validator'larý register et (CreateProductRequestValidator'ýn bulunduðu assembly)
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
-// NOT: Otomatik FluentValidation entegrasyonunu KAPATýyoruz (çünkü validator içinde async kurallar olacak)
-// builder.Services.AddFluentValidationAutoValidation(); // <-- DÝKKAT: Bu satýrý kesinlikle yorum satýrý yap
-
-// Controllers (manuel validasyon yapacaðýmýz için özel filter eklemiyoruz)
 builder.Services.AddControllers();
 
 // Biz manuel Response formatý kullanacaðýmýz için ASP.NET'in otomatik ModelState 400'ünü kapatýyoruz
@@ -44,6 +40,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler(x => {});
 
 // Migration ve DB init
 using (var scope = app.Services.CreateScope())
