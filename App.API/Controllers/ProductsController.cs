@@ -1,6 +1,7 @@
 ﻿using App.Services.Products;
 using App.Services.Products.Create;
 using App.Services.Products.Update;
+using App.Services.Products.UpdateStock;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.API.Controllers
@@ -35,7 +36,6 @@ namespace App.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
         {
-            // Serviste manuel validasyon yapılıyor (ValidateAsync) — controller doğrudan servisi çağırır
             return CreateActionResult<CreateProductResponse>(await _productService.CreateProductAsync(request));
         }
 
