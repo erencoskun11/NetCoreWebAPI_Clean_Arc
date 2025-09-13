@@ -10,6 +10,6 @@ namespace App.Repositories.Categories
     {
         Task<Category?> GetCategoryWithProductsAsync(int id);
 
-        IQueryable<Category> GetCategoryByProductsAsync();
+        IQueryable<Category> GetCategoryWithProducts();
     }
 }
