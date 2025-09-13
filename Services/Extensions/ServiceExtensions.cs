@@ -1,16 +1,12 @@
 ﻿using App.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using App.Services.Products;
-using FluentValidation.AspNetCore;
 using FluentValidation;
-using System.Reflection;
 using App.Services.Products.Create;
+using AutoMapper;
+using Microsoft.Extensions.Logging;
+using App.Services.ExceptionHandlers;
 
 namespace App.Services.Extensions
 {
@@ -19,14 +15,34 @@ namespace App.Services.Extensions
         public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IProductService, ProductService>();
-            
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-            services.AddFluentValidationAutoValidation();
-            
-            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            // FluentValidation validator'larını register et
             services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
-            services.AddAutoMapper(Assembly.GetExecutingAssembly());
+
+            // AutoMapper - IMapper'ı service provider üzerinden oluşturup register ediyoruz
+            services.AddSingleton<IMapper>(sp =>
+            {
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+                var config = new MapperConfiguration(cfg =>
+                {
+                    // Profilini burada ekle (veya cfg.AddMaps(...) kullan)
+                    cfg.AddProfile(new ProductsMappingProfile());
+                }, loggerFactory);
+
+                // Validate configuration (opsiyonel ama tavsiye edilir)
+                config.AssertConfigurationIsValid();
+
+                return config.CreateMapper();
+            });
+
+            services.AddExceptionHandler<CriticalExceptionHandler>();
+            services.AddExceptionHandler<GlobalExceptionHandler>();
+
+
+
+
             return services;
         }
     }
