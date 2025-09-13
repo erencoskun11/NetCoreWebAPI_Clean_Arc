@@ -11,7 +11,7 @@ namespace App.Repositories.Categories
             _context = context;
         }
 
-        public IQueryable<Category> GetCategoryByProductsAsync()
+        public IQueryable<Category> GetCategoryWithProducts()
         {
             return _context.Categories.Include(x=>x.Products).AsQueryable();
         }
