@@ -20,7 +20,7 @@ namespace App.API.Controllers
         }
 
         [NonAction]
-        public IActionResult CreateActionResult<T>(ServiceResult result)
+        public IActionResult CreateActionResult(ServiceResult result)
         {
             if (result.Status == HttpStatusCode.NoContent)
             {
