@@ -7,6 +7,7 @@ using App.Services.Products.Create;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using App.Services.ExceptionHandlers;
+using App.Services.Categories;
 
 namespace App.Services.Extensions
 {
@@ -15,6 +16,9 @@ namespace App.Services.Extensions
         public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IProductService, ProductService>();
+            
+            services.AddScoped<ICategoryService, CategoryService>();
+
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             // FluentValidation validator'larını register et
@@ -28,6 +32,8 @@ namespace App.Services.Extensions
                 var config = new MapperConfiguration(cfg =>
                 {
                     // Profilini burada ekle (veya cfg.AddMaps(...) kullan)
+                    cfg.AddProfile(new CategoryProfileMapping());
+
                     cfg.AddProfile(new ProductsMappingProfile());
                 }, loggerFactory);
 
