@@ -1,38 +1,59 @@
-using App.Repositories;
+ï»¿using App.Repositories;
 using App.Repositories.Extensions;
 using App.Services;
+using App.Services.Categories;
 using App.Services.Extensions;
+using App.Services.Products;
 using App.Services.Products.Create;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// PostgreSQL connection string
+// ğŸ”¹ Connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// DbContext kaydı
+// ğŸ”¹ DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Repository & Service kayıtları
+// ğŸ”¹ Repository ve Service katmanlarÄ±
 builder.Services.AddRepositories(builder.Configuration)
                 .AddServices(builder.Configuration);
 
-// Validator'ları register et (CreateProductRequestValidator'ın bulunduğu assembly)
+// ğŸ”¹ AutoMapper profilleri (tip Ã¼zerinden)
+builder.Services.AddAutoMapper(
+    typeof(CategoryProfileMapping).Assembly,
+    typeof(ProductsMappingProfile).Assembly
+);
+
+
+// ğŸ”¹ FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
+// ğŸ”¹ Controllers
 builder.Services.AddControllers();
-
-// Biz manuel Response formatı kullanacağımız için ASP.NET'in otomatik ModelState 400'ünü kapatıyoruz
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
 });
 
-// Swagger
+// ğŸ”¹ CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// ğŸ”¹ Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -41,23 +62,51 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-app.UseExceptionHandler(x => {});
-
-// Migration ve DB init
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
-
-// Swagger UI
+// ğŸ”¹ Development/Production exception handling
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1"));
 }
+else
+{
+    app.UseExceptionHandler(appError =>
+    {
+        appError.Run(async context =>
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new { error = "Internal Server Error" });
+        });
+    });
+}
 
+// ğŸ”¹ AutoMapper ve DB migration kontrolÃ¼
+using (var scope = app.Services.CreateScope())
+{
+    var provider = scope.ServiceProvider;
+
+    try
+    {
+        var mapper = provider.GetRequiredService<IMapper>();
+        mapper.ConfigurationProvider.AssertConfigurationIsValid();
+        Console.WriteLine("âœ… AutoMapper configuration valid.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("âŒ AutoMapper config error: " + ex);
+        throw;
+    }
+
+    var db = provider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
+// ğŸ”¹ Middleware pipeline
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
 app.Run();
