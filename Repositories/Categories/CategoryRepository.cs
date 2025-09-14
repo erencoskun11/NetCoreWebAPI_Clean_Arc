@@ -13,7 +13,7 @@ namespace App.Repositories.Categories
 
         public IQueryable<Category> GetCategoryWithProducts()
         {
-            return _context.Categories.Include(x=>x.Products).AsQueryable();
+            return _context.Categories.Include(x=>x.Products).AsNoTracking();
         }
 
         public Task<Category?> GetCategoryWithProductsAsync(int id)
