@@ -42,19 +42,19 @@ namespace App.API.Controllers
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateProductRequest request)
         {
-            return CreateActionResult<object>(await _productService.UpdateProductAsync(id, request));
+            return CreateActionResult(await _productService.UpdateProductAsync(id, request));
         }
 
         [HttpPatch("stock")]
         public async Task<IActionResult> UpdateStock(UpdateProductStockRequest request)
         {
-            return CreateActionResult<object>(await _productService.UpdateStockAsync(request));
+            return CreateActionResult(await _productService.UpdateStockAsync(request));
         }
         
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            return CreateActionResult<object>(await _productService.DeleteProductAsync(id));
+            return CreateActionResult(await _productService.DeleteProductAsync(id));
         }
 
         [HttpGet("top/{count}")]
