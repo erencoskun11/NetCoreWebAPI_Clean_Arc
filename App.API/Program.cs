@@ -7,9 +7,11 @@ using App.Services.Products;
 using App.Services.Products.Create;
 using AutoMapper;
 using FluentValidation;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,22 +19,25 @@ var builder = WebApplication.CreateBuilder(args);
 // 🔹 Connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 🔹 DbContext
+// 🔹 DbContext (debug logging ve sensitive data logging eklendi)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString)
+           .EnableSensitiveDataLogging() // sadece dev ortamı için
+           .LogTo(Console.WriteLine, LogLevel.Information)
+);
 
 // 🔹 Repository ve Service katmanları
 builder.Services.AddRepositories(builder.Configuration)
                 .AddServices(builder.Configuration);
 
-// 🔹 AutoMapper profilleri (tip üzerinden)
-builder.Services.AddAutoMapper(
-    typeof(CategoryProfileMapping).Assembly,
-    typeof(ProductsMappingProfile).Assembly
-);
+// 🔹 AutoMapper profilleri (Program.cs'de tek kayıt, 15.0.1 uyumlu)
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<CategoryProfileMapping>();
+    cfg.AddProfile<ProductsMappingProfile>();
+});
 
-
-// 🔹 FluentValidation
+// 🔹 FluentValidation (tek kayıt burada)
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
 // 🔹 Controllers
@@ -82,7 +87,7 @@ else
     });
 }
 
-// 🔹 AutoMapper ve DB migration kontrolü
+// 🔹 AutoMapper ve DB migration kontrolü (DB adını konsola yazıyoruz)
 using (var scope = app.Services.CreateScope())
 {
     var provider = scope.ServiceProvider;
@@ -100,6 +105,16 @@ using (var scope = app.Services.CreateScope())
     }
 
     var db = provider.GetRequiredService<AppDbContext>();
+    try
+    {
+        // Hangi DB'ye bağlandığımızı görebilmek için
+        Console.WriteLine("Connected DB (app): " + db.Database.GetDbConnection().Database);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Could not read DB connection info: " + ex);
+    }
+
     db.Database.Migrate();
 }
 
