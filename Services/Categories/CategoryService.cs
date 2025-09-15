@@ -1,6 +1,7 @@
 ﻿using App.Repositories;
 using App.Repositories.Categories;
 using App.Services.Categories.Create;
+using App.Services.Categories.Dto;
 using App.Services.Categories.Update;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +12,10 @@ namespace App.Services.Categories
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
-        private readonly UnitOfWork _unitOfWork;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public CategoryService(ICategoryRepository categoryRepository, UnitOfWork unitOfWork, IMapper mapper)
+        public CategoryService(ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMapper mapper)
         {
             _categoryRepository = categoryRepository;
             _unitOfWork = unitOfWork;
@@ -61,7 +62,7 @@ namespace App.Services.Categories
             if (isDuplicate)
                 return ServiceResult<int>.Fail("The category name is already in database", HttpStatusCode.BadRequest);
 
-            var newCategory = new Category { Name = request.Name };
+            var newCategory = _mapper.Map<Category>(request);
             await _categoryRepository.AddAsync(newCategory);
             await _unitOfWork.SaveChangesAsync();
 
@@ -81,7 +82,7 @@ namespace App.Services.Categories
             if (isDuplicate)
                 return ServiceResult.Fail("Category name already exists", HttpStatusCode.BadRequest);
 
-            _mapper.Map(request, category);
+            category = _mapper.Map(request, category);
             _categoryRepository.Update(category);
             await _unitOfWork.SaveChangesAsync();
 
