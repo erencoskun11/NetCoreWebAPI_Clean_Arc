@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 
 namespace App.Repositories.Categories
 {
-    public class Category
+    public class Category : IAuditEntity
     {
         public int Id { get; set; }
         public string Name { get; set; } = default!;
 
         public ICollection<Product> Products { get; set; } = new List<Product>();
-
+        public DateTime? Created { get; set; }
+        public DateTime? Updated { get; set; }
     }
 }
