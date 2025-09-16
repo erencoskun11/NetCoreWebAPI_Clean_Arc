@@ -1,4 +1,5 @@
-﻿using App.Repositories.Categories;
+﻿// CategoryProfileMapping.cs
+using App.Repositories.Categories;
 using App.Services.Categories.Create;
 using App.Services.Categories.Dto;
 using App.Services.Categories.Update;
@@ -15,12 +16,16 @@ namespace App.Services.Categories
 
             CreateMap<CreateCategoryRequest, Category>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.ToLowerInvariant()))
-                .ForMember(dest => dest.Products, opt => opt.Ignore()); // Products alanını ignore et
+                .ForMember(dest => dest.Products, opt => opt.Ignore())
+                .ForMember(dest => dest.Created, opt => opt.Ignore())
+                .ForMember(dest => dest.Updated, opt => opt.Ignore());
 
             CreateMap<UpdateCategoryRequest, Category>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.ToLowerInvariant()))
-                .ForMember(dest => dest.Id, opt => opt.Ignore())        // Id'yi ignore et
-                .ForMember(dest => dest.Products, opt => opt.Ignore()); // Products alanını ignore et
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Products, opt => opt.Ignore())
+                .ForMember(dest => dest.Created, opt => opt.Ignore())
+                .ForMember(dest => dest.Updated, opt => opt.Ignore());
         }
     }
 }
