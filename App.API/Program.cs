@@ -1,5 +1,6 @@
 ﻿using App.Repositories;
 using App.Repositories.Extensions;
+using App.Repositories.Interceptors;
 using App.Services;
 using App.Services.Categories;
 using App.Services.Extensions;
@@ -19,25 +20,29 @@ var builder = WebApplication.CreateBuilder(args);
 // 🔹 Connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 🔹 DbContext (debug logging ve sensitive data logging eklendi)
-builder.Services.AddDbContext<AppDbContext>(options =>
+// 🔹 Register AuditDbContextInterceptor
+builder.Services.AddScoped<AuditDbContextInterceptor>();
+
+// 🔹 DbContext (debug logging, sensitive data logging ve interceptor eklendi)
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     options.UseNpgsql(connectionString)
            .EnableSensitiveDataLogging() // sadece dev ortamı için
            .LogTo(Console.WriteLine, LogLevel.Information)
+           .AddInterceptors(serviceProvider.GetRequiredService<AuditDbContextInterceptor>())
 );
 
 // 🔹 Repository ve Service katmanları
 builder.Services.AddRepositories(builder.Configuration)
                 .AddServices(builder.Configuration);
 
-// 🔹 AutoMapper profilleri (Program.cs'de tek kayıt, 15.0.1 uyumlu)
+// 🔹 AutoMapper profilleri
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<CategoryProfileMapping>();
     cfg.AddProfile<ProductsMappingProfile>();
 });
 
-// 🔹 FluentValidation (tek kayıt burada)
+// 🔹 FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
 // 🔹 Controllers
@@ -87,7 +92,7 @@ else
     });
 }
 
-// 🔹 AutoMapper ve DB migration kontrolü (DB adını konsola yazıyoruz)
+// 🔹 AutoMapper ve DB migration kontrolü
 using (var scope = app.Services.CreateScope())
 {
     var provider = scope.ServiceProvider;
@@ -107,7 +112,6 @@ using (var scope = app.Services.CreateScope())
     var db = provider.GetRequiredService<AppDbContext>();
     try
     {
-        // Hangi DB'ye bağlandığımızı görebilmek için
         Console.WriteLine("Connected DB (app): " + db.Database.GetDbConnection().Database);
     }
     catch (Exception ex)
