@@ -24,6 +24,9 @@ namespace App.Services.Products.Create
 
             RuleFor(x => x.Stock)
                 .InclusiveBetween(1, 100).WithMessage("Product stock must be between 1 and 100");
+
+            RuleFor(x=> x.CategoryId)
+                .GreaterThan(0).WithMessage("product catagory mus be greater than zero ");
         }
 
         private async Task<bool> BeUniqueName(string name, CancellationToken cancellationToken)
