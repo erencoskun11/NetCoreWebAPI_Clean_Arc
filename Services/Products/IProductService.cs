@@ -1,5 +1,6 @@
 ﻿using App.Services.Products.Create;
 using App.Services.Products.Update;
+using App.Services.Products.UpdateStock;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace App.Services.Products
