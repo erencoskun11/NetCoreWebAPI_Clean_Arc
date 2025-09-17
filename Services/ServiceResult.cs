@@ -8,34 +8,27 @@ namespace App.Services
     {
         public T? Data { get; set; }
 
-        // Hata mesajlarını API response içinde görmek isteyeceksin -> serileştirilebilir olmalı
         [JsonPropertyName("errors")]
         public List<string>? Errors { get; set; }
 
-        [JsonIgnore]
-        public bool IsSuccess => Errors == null || Errors.Count == 0;
+        [JsonIgnore]public bool IsSuccess => Errors == null || Errors.Count == 0;
 
-        [JsonIgnore]
-        public bool IsFail => !IsSuccess;
+        [JsonIgnore]public bool IsFail => !IsSuccess;
 
-        [JsonIgnore]
-        public HttpStatusCode Status { get; set; }
+        [JsonIgnore]public HttpStatusCode Status { get; set; }
 
         [JsonIgnore]
         public string? UrlAsCreated { get; set; }
 
-        // Başarılı
         public static ServiceResult<T> Success(T data, HttpStatusCode status = HttpStatusCode.OK)
             => new() { Data = data, Status = status };
 
         public static ServiceResult<T> SuccessAsCreated(T data, string urlAsCreated)
             => new() { Data = data, Status = HttpStatusCode.Created, UrlAsCreated = urlAsCreated };
 
-        // Hatalı - liste
         public static ServiceResult<T> Fail(List<string> errors, HttpStatusCode status = HttpStatusCode.BadRequest)
             => new() { Errors = errors, Status = status };
 
-        // Hatalı - tek mesaj
         public static ServiceResult<T> Fail(string errorMessage, HttpStatusCode status = HttpStatusCode.BadRequest)
             => new() { Errors = new List<string> { errorMessage }, Status = status };
     }
@@ -45,14 +38,11 @@ namespace App.Services
         [JsonPropertyName("errors")]
         public List<string>? Errors { get; set; }
 
-        [JsonIgnore]
-        public bool IsSuccess => Errors == null || Errors.Count == 0;
+        [JsonIgnore]public bool IsSuccess => Errors == null || Errors.Count == 0;
 
-        [JsonIgnore]
-        public bool IsFail => !IsSuccess;
+        [JsonIgnore]public bool IsFail => !IsSuccess;
 
-        [JsonIgnore]
-        public HttpStatusCode Status { get; set; }
+        [JsonIgnore]public HttpStatusCode Status { get; set; }
 
         public static ServiceResult Success(HttpStatusCode status = HttpStatusCode.OK)
             => new() { Status = status };
