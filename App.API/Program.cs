@@ -1,11 +1,14 @@
 ﻿using App.Repositories;
+using App.Repositories.Categories;
 using App.Repositories.Extensions;
 using App.Repositories.Interceptors;
+using App.Repositories.Products;
 using App.Services;
 using App.Services.Categories;
 using App.Services.Extensions;
 using App.Services.Products;
 using App.Services.Products.Create;
+using App.Services.Filters;
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
@@ -17,42 +20,58 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 Connection string
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// ---------------------------
+// Configuration & Connection
+// ---------------------------
+var configuration = builder.Configuration;
+var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-// 🔹 Register AuditDbContextInterceptor
+// ---------------------------
+// Register Cross-cutting services
+// ---------------------------
 builder.Services.AddScoped<AuditDbContextInterceptor>();
 
-// 🔹 DbContext (debug logging, sensitive data logging ve interceptor eklendi)
+// If your RepositoryExtensions registers open-generic IGenericRepository<,> then no need to register here.
+// Call your extension to register repos and services (it should handle concrete repos too).
+builder.Services.AddRepositories(configuration);
+builder.Services.AddServices(configuration);
+
+// ---------------------------
+// DbContext
+// ---------------------------
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
     options.UseNpgsql(connectionString)
-           .EnableSensitiveDataLogging() // sadece dev ortamı için
-           .LogTo(Console.WriteLine, LogLevel.Information)
-           .AddInterceptors(serviceProvider.GetRequiredService<AuditDbContextInterceptor>())
-);
+           .AddInterceptors(serviceProvider.GetRequiredService<AuditDbContextInterceptor>());
 
-// 🔹 Repository ve Service katmanları
-builder.Services.AddRepositories(builder.Configuration)
-                .AddServices(builder.Configuration);
+    // Sensitive data logging and console logging only in Development
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging()
+               .LogTo(Console.WriteLine, LogLevel.Information);
+    }
+});
 
-// 🔹 AutoMapper profilleri
+
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<CategoryProfileMapping>();
     cfg.AddProfile<ProductsMappingProfile>();
 });
 
-// 🔹 FluentValidation
+
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
-// 🔹 Controllers
+
 builder.Services.AddControllers();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
 });
 
-// 🔹 CORS
+// ---------------------------
+// CORS
+// ---------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -63,16 +82,23 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 🔹 Swagger/OpenAPI
+// ---------------------------
+// Swagger / OpenAPI
+// ---------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 });
 
+// ---------------------------
+// Build app
+// ---------------------------
 var app = builder.Build();
 
-// 🔹 Development/Production exception handling
+// ---------------------------
+// Error handling & Swagger
+// ---------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -92,11 +118,14 @@ else
     });
 }
 
-// 🔹 AutoMapper ve DB migration kontrolü
+// ---------------------------
+// AutoMapper validation & DB migration (only Dev)
+// ---------------------------
 using (var scope = app.Services.CreateScope())
 {
     var provider = scope.ServiceProvider;
 
+    // Validate AutoMapper configuration
     try
     {
         var mapper = provider.GetRequiredService<IMapper>();
@@ -109,6 +138,7 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 
+    // DB connection check and migrate (DEV only)
     var db = provider.GetRequiredService<AppDbContext>();
     try
     {
@@ -119,10 +149,15 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("Could not read DB connection info: " + ex);
     }
 
-    db.Database.Migrate();
+    if (builder.Environment.IsDevelopment())
+    {
+        db.Database.Migrate();
+    }
 }
 
-// 🔹 Middleware pipeline
+// ---------------------------
+// Middleware pipeline
+// ---------------------------
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
