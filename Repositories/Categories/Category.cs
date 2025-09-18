@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 
 namespace App.Repositories.Categories
 {
-    public class Category : IAuditEntity
+    public class Category :BaseEntity<int>, IAuditEntity
     {
-        public int Id { get; set; }
         public string Name { get; set; } = default!;
 
         public ICollection<Product> Products { get; set; } = new List<Product>();
