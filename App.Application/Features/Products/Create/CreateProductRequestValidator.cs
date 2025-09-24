@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using App.Application.Contracts.Persistence;
+using FluentValidation;
 
 namespace App.Application.Features.Products.Create
 {
@@ -28,7 +29,7 @@ namespace App.Application.Features.Products.Create
         private async Task<bool> BeUniqueName(string name, CancellationToken cancellationToken)
         {
             // DB kontrolü asenkron
-            return !await _productRepository.Where(x => x.Name == name).AnyAsync(cancellationToken);
+            return !await _productRepository.AnyAsync(x => x.Name == name);
         }
     }
 }
