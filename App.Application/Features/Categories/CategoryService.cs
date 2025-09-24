@@ -4,8 +4,10 @@ using App.Application.Contracts.ServiceBus;
 using App.Application.Features.Categories.Create;
 using App.Application.Features.Categories.Dto;
 using App.Application.Features.Categories.Update;
+using App.Domain.Commands;
+using App.Domain.Const;
 using App.Domain.Entities;
-using App.Domain.Events;
+using App.Domain.Events.CategoryEvents;
 using AutoMapper;
 using System.Net;
 
@@ -18,7 +20,6 @@ namespace App.Application.Features.Categories
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
         private readonly IServiceBus _serviceBus;
-        private const string CategoryListCacheKey = "CategoryListCacheKey";
         public CategoryService(ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMapper mapper,ICacheService cacheService,IServiceBus serviceBus)
         {
             _categoryRepository = categoryRepository;
@@ -47,7 +48,7 @@ namespace App.Application.Features.Categories
 
         public async Task<ServiceResult<List<CategoryDto>>> GetAllListAsync()
         {
-            var cache = await _cacheService.GetAsync<List<CategoryDto>>(CategoryListCacheKey);
+            var cache = await _cacheService.GetAsync<List<CategoryDto>>(CacheKeys.CategoryList);
 
             if(cache!= null) return ServiceResult<List<CategoryDto>>.Success(cache);
             
@@ -55,7 +56,7 @@ namespace App.Application.Features.Categories
             
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
             
-            await _cacheService.AddAsync(CategoryListCacheKey, dtos,TimeSpan.FromMinutes(10));
+            await _cacheService.AddAsync(CacheKeys.CategoryList, dtos,TimeSpan.FromMinutes(10));
             return ServiceResult<List<CategoryDto>>.Success(dtos);
         }
 
@@ -78,7 +79,7 @@ namespace App.Application.Features.Categories
             var newCategory = _mapper.Map<Category>(request);
             await _categoryRepository.AddAsync(newCategory);
             await _unitOfWork.SaveChangesAsync();
-            await _cacheService.RemoveAsync(CategoryListCacheKey);
+            await _cacheService.RemoveAsync(CacheKeys.CategoryList);
 
             await _serviceBus.PublishAsync(new CategoryAddedEvent(newCategory.Id,newCategory.Name,newCategory.Created,newCategory.Updated));
 
@@ -98,18 +99,29 @@ namespace App.Application.Features.Categories
             category.Id = id;
             _categoryRepository.Update(category);
             await _unitOfWork.SaveChangesAsync();
-            await _cacheService.RemoveAsync(CategoryListCacheKey);
+            await _cacheService.RemoveAsync(CacheKeys.CategoryList);
+
+            await _serviceBus.SendAsync(new ReserveCategoryCommand(category.Id,category.Name),ServiceBusConst.ReserveCategoryCommandQueueName);
+
+
             return ServiceResult.Success(HttpStatusCode.NoContent);
         }
 
         public async Task<ServiceResult> DeleteAsync(int id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
-            
+            if (category == null)
+                return ServiceResult.Fail("Kategori bulunamadı.", HttpStatusCode.NotFound);
+
             _categoryRepository.Delete(category);
-            await _unitOfWork.SaveChangesAsync();
-            await _cacheService.RemoveAsync(CategoryListCacheKey);
+            await _unitOfWork.SaveChangesAsync(); 
+
+            await _cacheService.RemoveAsync(CacheKeys.CategoryList);
+            await _serviceBus.PublishAsync(new CategoryDeletedEvent(category.Id, category.Name));
+
             return ServiceResult.Success(HttpStatusCode.NoContent);
         }
+
+
     }
 }
