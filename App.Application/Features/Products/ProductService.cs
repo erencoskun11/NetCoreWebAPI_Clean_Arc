@@ -5,8 +5,10 @@ using App.Application.Features.Products.Create;
 using App.Application.Features.Products.Dto;
 using App.Application.Features.Products.Update;
 using App.Application.Features.Products.UpdateStock;
+using App.Domain.Commands;
+using App.Domain.Const;
 using App.Domain.Entities;
-using App.Domain.Events;
+using App.Domain.Events.ProductEvents;
 using AutoMapper;
 using FluentValidation;
 using System.Net;
@@ -22,7 +24,6 @@ namespace App.Application.Features.Products
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
         private readonly IServiceBus _busService;
-        private const string ProductListCacheKey= "ProductListCacheKey";
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
@@ -69,7 +70,7 @@ namespace App.Application.Features.Products
             await _productRepository.AddAsync(product);
             await _unitOfWork.SaveChangesAsync();
             // cache temizleme
-            await _cacheService.RemoveAsync(ProductListCacheKey);
+            await _cacheService.RemoveAsync(CacheKeys.ProductList);
 
             await _busService.PublishAsync(new ProductAddedEvent(product.Id, product.Name, product.Price));
 
@@ -85,7 +86,7 @@ namespace App.Application.Features.Products
         {
             // cache aside pattern
             // 1. cache kontrol
-            var productListAsCached = await _cacheService.GetAsync<List<ProductDto>>(ProductListCacheKey);
+            var productListAsCached = await _cacheService.GetAsync<List<ProductDto>>(CacheKeys.ProductList);
 
             if (productListAsCached is not null)
                 return ServiceResult<List<ProductDto>>.Success(productListAsCached);
@@ -100,7 +101,7 @@ namespace App.Application.Features.Products
             var dto = _mapper.Map<List<ProductDto>>(products);
 
             // 4. Cache’e ekle
-            await _cacheService.AddAsync(ProductListCacheKey, dto, TimeSpan.FromMinutes(10));
+            await _cacheService.AddAsync(CacheKeys.ProductList, dto, TimeSpan.FromMinutes(10));
 
             return ServiceResult<List<ProductDto>>.Success(dto, HttpStatusCode.OK);
         }
@@ -150,7 +151,7 @@ namespace App.Application.Features.Products
             _productRepository.Update(product);
             await _unitOfWork.SaveChangesAsync();
             // cache temizleme
-            await _cacheService.RemoveAsync(ProductListCacheKey);
+            await _cacheService.RemoveAsync(CacheKeys.ProductList);
             return ServiceResult.Success(HttpStatusCode.NoContent);
         }
 
@@ -164,7 +165,12 @@ namespace App.Application.Features.Products
             _productRepository.Update(product);
             await _unitOfWork.SaveChangesAsync();
             // cache temizleme
-            await _cacheService.RemoveAsync(ProductListCacheKey);
+            await _cacheService.RemoveAsync(CacheKeys.ProductList);
+
+            await _busService.SendAsync(new ReserveProductCommand(request.ProductId, request.Quantity),
+                ServiceBusConst.ReserveProductCommandQueueName);
+
+
             return ServiceResult.Success(HttpStatusCode.NoContent);
         }
 
@@ -175,7 +181,10 @@ namespace App.Application.Features.Products
             _productRepository.Delete(product!);
             await _unitOfWork.SaveChangesAsync();
             // cache temizleme
-            await _cacheService.RemoveAsync(ProductListCacheKey);
+            await _cacheService.RemoveAsync(CacheKeys.ProductList);
+            // for rabbitmq
+            await _busService.PublishAsync(new ProductDeletedEvent(product.Id, product.Name, product.Price));
+
             return ServiceResult.Success(HttpStatusCode.NoContent);
         }
 
