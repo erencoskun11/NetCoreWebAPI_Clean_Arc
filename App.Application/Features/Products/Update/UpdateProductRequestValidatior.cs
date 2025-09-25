@@ -1,4 +1,6 @@
-﻿namespace App.Application.Features.Products.Update
+﻿using FluentValidation;
+
+namespace App.Application.Features.Products.Update
 {
     public class UpdateProductRequestValidatior : AbstractValidator<UpdateProductRequest>
     {
