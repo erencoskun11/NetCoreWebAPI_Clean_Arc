@@ -71,10 +71,7 @@ namespace App.Services.Categories
 
         public async Task<ServiceResult> UpdateAsync(int id, UpdateCategoryRequest request)
         {
-            var category = await _categoryRepository.GetByIdAsync(id);
-            if (category == null)
-                return ServiceResult.Fail("Category not found", HttpStatusCode.NotFound);
-
+           
             var isDuplicate = await _categoryRepository
                 .Where(x => x.Name == request.Name && x.Id != id)
                 .AnyAsync();
@@ -82,7 +79,8 @@ namespace App.Services.Categories
             if (isDuplicate)
                 return ServiceResult.Fail("Category name already exists", HttpStatusCode.BadRequest);
 
-            category = _mapper.Map(request, category);
+            var category = _mapper.Map<Category>(request);
+            category.Id = id;
             _categoryRepository.Update(category);
             await _unitOfWork.SaveChangesAsync();
 
@@ -92,9 +90,7 @@ namespace App.Services.Categories
         public async Task<ServiceResult> DeleteAsync(int id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
-            if (category == null)
-                return ServiceResult.Fail("The category was not found", HttpStatusCode.NotFound);
-
+            
             _categoryRepository.Delete(category);
             await _unitOfWork.SaveChangesAsync();
 
