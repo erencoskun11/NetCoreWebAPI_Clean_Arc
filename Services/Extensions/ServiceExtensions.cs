@@ -1,5 +1,6 @@
 ﻿using App.Services.Categories;
 using App.Services.ExceptionHandlers;
+using App.Services.Filters;
 using App.Services.Products;
 using App.Services.Products.Create;
 using FluentValidation;
@@ -15,6 +16,9 @@ namespace App.Services.Extensions
             // 🔹 Servisler
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped(typeof(NotFoundFilter<,>));
+
+
 
             // 🔹 FluentValidation
             services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
