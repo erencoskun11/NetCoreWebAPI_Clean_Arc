@@ -5,7 +5,7 @@ using App.Repositories.Products;
 
 namespace App.Repositories
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public class GenericRepository<T,TId> : IGenericRepository<T,TId> where T : BaseEntity<TId> where TId : struct
     {
         protected readonly AppDbContext _context;
         private readonly DbSet<T> _dbSet;
@@ -15,8 +15,10 @@ namespace App.Repositories
             _context = context;
             _dbSet = context.Set<T>();
         }
-        //IQueryable veriyi hemen cekmiyor 
+        //IQueryable means it does not fetch the data immediately
         public IQueryable<T> GetAll() => _dbSet.AsNoTracking();
+
+        public Task<bool> AnyAsync(TId id) =>_dbSet.AnyAsync(x=>x.Id.Equals(id));
 
         public IQueryable<T> Where(Expression<Func<T, bool>> predicate) => _dbSet.Where(predicate).AsNoTracking();
 
