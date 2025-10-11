@@ -3,7 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace App.Repositories.Categories
 {
-    public class CategoryRepository : GenericRepository<Category>, ICategoryRepository
+    public class CategoryRepository : GenericRepository<Category,int>, ICategoryRepository
     {
         private readonly AppDbContext _context;
         public CategoryRepository(AppDbContext context) : base(context)
