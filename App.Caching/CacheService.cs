@@ -10,12 +10,20 @@ namespace App.Caching
 {
     public class CacheService : ICacheService
     {
+        // proxy ve decorater projenin buyuklugune gore daha ıyı olabilir
         private readonly IMemoryCache _memoryCache;
 
         public CacheService(IMemoryCache memoryCache)
         {
             _memoryCache = memoryCache;
         }
+        public Task<T> GetAsync<T>(string cacheKey)
+        {
+            if (_memoryCache.TryGetValue(cacheKey, out T cacheItem)) return Task.FromResult(cacheItem);
+            return Task.FromResult(default(T));
+        }
+
+
         public Task AddAsync<T>(string cacheKey, T value, TimeSpan exprTimeSpan)
         {
             var cacheOptions = new MemoryCacheEntryOptions
@@ -25,13 +33,7 @@ namespace App.Caching
             _memoryCache.Set(cacheKey, value, cacheOptions);
             return Task.CompletedTask;
         }
-
-        public Task<T> GetAsync<T>(string cacheKey)
-        {
-            if (_memoryCache.TryGetValue(cacheKey, out T cacheItem)) return Task.FromResult(cacheItem);
-            return Task.FromResult(default(T));
-        }
-
+      
         public Task RemoveAsync(string cacheKey)
         {
             _memoryCache.Remove(cacheKey);
